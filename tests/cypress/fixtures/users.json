@@ -1,0 +1,14 @@
+{
+    "testUser": {
+      "email": "test@example.com",
+      "password": "Test123!@#",
+      "name": "Test User",
+      "phone": "+1234567890"
+    },
+    "adminUser": {
+      "email": "admin@example.com",
+      "password": "Admin123!@#",
+      "name": "Admin User",
+      "phone": "+9876543210"
+    }
+  }
