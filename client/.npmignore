@@ -1,0 +1,11 @@
+// client/.npmignore
+src/
+tests/
+.github/
+.vscode/
+.eslintrc
+.babelrc
+rollup.config.js
+coverage/
+.nyc_output/
+.DS_Store

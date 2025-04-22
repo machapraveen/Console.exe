@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:4.4
+    container_name: console-ext-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    restart: always
+    networks:
+      - console-ext-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo mongodb:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Backend API service
+  api:
+    build:
+      context: ../server
+      dockerfile: Dockerfile
+    container_name: console-ext-api
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - MONGODB_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/console-ext?authSource=admin
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=7d
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - CORS_ORIGINS=https://console-ext.com,https://dashboard.console-ext.com
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: always
+    networks:
+      - console-ext-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:4000/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+      
+  # Dashboard web app
+  dashboard:
+    build:
+      context: ../dashboard
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=https://api.console-ext.com
+    container_name: console-ext-dashboard
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: always
+    networks:
+      - console-ext-network
+
+  # Nginx for SSL termination and reverse proxy
+  nginx:
+    image: nginx:1.21-alpine
+    container_name: console-ext-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    depends_on:
+      - api
+      - dashboard
+    restart: always
+    networks:
+      - console-ext-network
+      
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: console-ext-certbot
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+volumes:
+  mongodb_data:
+
+networks:
+  console-ext-network:
+    driver: bridge

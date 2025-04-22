@@ -1,0 +1,40 @@
+{
+    "name": "console-ext-server",
+    "version": "1.0.0",
+    "description": "Backend API service for Console.ext",
+    "main": "src/server.js",
+    "scripts": {
+      "start": "node src/server.js",
+      "dev": "nodemon src/server.js",
+      "test": "mocha tests/**/*.js --timeout 10000",
+      "test:coverage": "nyc --reporter=lcov --reporter=text mocha tests/**/*.js",
+      "lint": "eslint ."
+    },
+    "dependencies": {
+      "axios": "^0.27.2",
+      "bcryptjs": "^2.4.3",
+      "cors": "^2.8.5",
+      "dotenv": "^16.0.1",
+      "express": "^4.18.1",
+      "express-mongo-sanitize": "^2.2.0",
+      "express-rate-limit": "^6.5.1",
+      "helmet": "^5.1.1",
+      "hpp": "^0.2.3",
+      "jsonwebtoken": "^8.5.1",
+      "mongoose": "^6.5.2",
+      "twilio": "^3.80.0",
+      "xss-clean": "^0.1.1"
+    },
+    "devDependencies": {
+      "chai": "^4.3.6",
+      "eslint": "^8.22.0",
+      "mocha": "^10.0.0",
+      "nodemon": "^2.0.19",
+      "nyc": "^15.1.0",
+      "sinon": "^14.0.0",
+      "supertest": "^6.2.4"
+    },
+    "engines": {
+      "node": ">=14.0.0"
+    }
+  }

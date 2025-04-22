@@ -1,0 +1,126 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+    
+    env:
+      MONGODB_URI_TEST: mongodb://testuser:testpass@localhost:27017/console-ext-test?authSource=admin
+      JWT_SECRET: test-jwt-secret
+      ENCRYPTION_KEY: abcdefghijklmnopqrstuvwxyz123456
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+        cache: 'npm'
+    
+    - name: Install server dependencies
+      working-directory: ./server
+      run: npm ci
+    
+    - name: Run server tests
+      working-directory: ./server
+      run: npm test
+    
+    - name: Install client dependencies
+      working-directory: ./client
+      run: npm ci
+    
+    - name: Run client tests
+      working-directory: ./client
+      run: npm test
+    
+    - name: Install dashboard dependencies
+      working-directory: ./dashboard
+      run: npm ci
+    
+    - name: Run dashboard tests
+      working-directory: ./dashboard
+      run: npm test
+      
+    - name: Generate coverage report
+      working-directory: ./server
+      run: npm run test:coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./server/coverage
+        flags: server
+    
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    
+    - name: Build and push server image
+      uses: docker/build-push-action@v2
+      with:
+        context: ./server
+        push: true
+        tags: |
+          consoleext/server:latest
+          consoleext/server:${{ github.sha }}
+    
+    - name: Build and push dashboard image
+      uses: docker/build-push-action@v2
+      with:
+        context: ./dashboard
+        push: true
+        build-args: |
+          REACT_APP_API_URL=https://api.console-ext.com
+        tags: |
+          consoleext/dashboard:latest
+          consoleext/dashboard:${{ github.sha }}
+  
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to production
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PROD_HOST }}
+        username: ${{ secrets.PROD_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY }}
+        script: |
+          cd /opt/console-ext
+          docker-compose pull
+          docker-compose up -d

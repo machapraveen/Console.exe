@@ -1,0 +1,47 @@
+{
+    "name": "console-ext",
+    "version": "1.0.0",
+    "description": "Client library for Console.ext error notification system",
+    "main": "dist/console-ext.js",
+    "browser": "dist/console-ext.min.js",
+    "files": [
+      "dist",
+      "README.md",
+      "LICENSE"
+    ],
+    "scripts": {
+      "build": "rollup -c",
+      "dev": "rollup -c -w",
+      "test": "mocha tests/**/*.js",
+      "test:coverage": "nyc --reporter=lcov --reporter=text mocha tests/**/*.js",
+      "lint": "eslint src",
+      "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+      "console",
+      "error",
+      "notification",
+      "monitoring",
+      "sms",
+      "alert"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+      "axios": "^0.27.2"
+    },
+    "devDependencies": {
+      "@babel/core": "^7.18.10",
+      "@babel/preset-env": "^7.18.10",
+      "@rollup/plugin-babel": "^5.3.1",
+      "@rollup/plugin-commonjs": "^22.0.2",
+      "@rollup/plugin-node-resolve": "^13.3.0",
+      "chai": "^4.3.6",
+      "eslint": "^8.22.0",
+      "mocha": "^10.0.0",
+      "nyc": "^15.1.0",
+      "rollup": "^2.78.1",
+      "rollup-plugin-terser": "^7.0.2",
+      "sinon": "^14.0.0"
+    }
+  }

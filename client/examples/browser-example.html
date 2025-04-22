@@ -1,0 +1,49 @@
+// client/examples/browser-example.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Console.ext Browser Example</title>
+  <script src="../dist/console-ext.min.js"></script>
+</head>
+<body>
+  <h1>Console.ext Browser Example</h1>
+  <p>Open your browser console to see the results.</p>
+  <button id="triggerError">Trigger Error</button>
+
+  <script>
+    // Initialize Console.ext
+    console.setKey('your-api-key-here', {
+      contextProvider: () => ({
+        url: window.location.href,
+        userAgent: navigator.userAgent
+      })
+    });
+
+    // Example function with error
+    function processCheckout() {
+      try {
+        // Simulate a critical error
+        throw new Error('Payment validation failed');
+        
+        return { success: true };
+      } catch (error) {
+        // Log to console and send notification
+        console.ext('Checkout failed:', error, { 
+          timestamp: new Date().toISOString() 
+        });
+        
+        return { success: false, error: error.message };
+      }
+    }
+
+    // Event listener for button
+    document.getElementById('triggerError').addEventListener('click', function() {
+      console.log('Processing checkout...');
+      const result = processCheckout();
+      console.log('Result:', result);
+    });
+  </script>
+</body>
+</html>
